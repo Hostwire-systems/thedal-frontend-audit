@@ -1,0 +1,67 @@
+/* Common styles for all select fields */
+.common-select .ant-select-selector {
+  background-color: #f5f5f5 !important; /* Fixed gray background */
+  border: 1px solid #d9d9d9 !important; /* Standard border */
+  border-radius: 4px !important; /* Rounded edges */
+  height: 40px !important; /* Consistent height */
+  padding: 0 12px !important; /* Comfortable padding */
+  transition: background-color 0.3s ease; /* Smooth transitions */
+}
+
+.common-select .ant-select-selection-item {
+  background-color: inherit !important; /* Match selector background */
+  color: #000; /* Black text */
+  font-weight:500;
+  text-align: center;
+  line-height: 50px; /* Vertically center text */
+}
+
+.common-select .ant-select-selection-placeholder {
+  background-color: inherit !important; /* Match selector background */
+  color: #999; /* Placeholder color */
+  font-style: italic; /* Optional styling */
+}
+
+/* Specific styles for Booth Vulnerability */
+.vulnerability-select .ant-select-selector {
+  background-color: transparent !important; /* Allow dynamic background */
+
+}
+
+.vulnerability-select .ant-select-selection-item {
+  background-color: inherit !important; /* Match dynamic background */
+  color: #000; /* Text color for selected item */
+  font-weight: 500;
+  padding: 0 12px; /* Adds spacing for text only */
+}
+
+.vulnerability-select .ant-select-dropdown-menu {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.vulnerability-select .ant-select-item-option {
+  height: 40px; /* Same height as selector */
+  line-height: 40px; /* Center vertically */
+ /* margin: 0 !important; */
+  padding: 0 12px; /* Consistent padding */
+  color: #000; /* Text color */
+  background-color: transparent !important;
+  transition: background-color 0.3s ease; /* Smooth color transition */
+}
+
+.vulnerability-select .ant-select-item-option-selected {
+  font-weight: 500; /* Slightly bold for selected option */
+}
+
+.vulnerability-select .ant-select-item-option-content {
+  padding: 0 12px; /* Adds padding only inside the text container */
+  display: block; /* Ensures consistent box model */
+  width: 100%; /* Fills the option width */
+  background-color: inherit; /* Matches parent's dynamic background */
+  box-sizing: border-box;
+}
+
+.vulnerability-select .ant-select-item-option:hover {
+  background-color: rgba(0, 0, 0, 0.05); /* Subtle hover effect */
+}

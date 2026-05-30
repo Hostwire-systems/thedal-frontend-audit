@@ -1,0 +1,68 @@
+/* // CreatePart.css */
+.custom-select .ant-select-selector {
+  background-color: #f5f5f5 !important;
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 4px !important;
+}
+
+.custom-select .ant-select-selection-placeholder {
+  color: #999 !important;
+}
+
+.custom-select .ant-select-selection-item {
+  color: #333 !important;
+}
+
+.custom-select .ant-select-selection-search-input {
+  background-color: #f5f5f5 !important;
+  border: none;
+  color: #333;
+  height: 40px;
+  padding: 0 12px;
+}
+
+.input-element {
+  background-color: #f5f5f5 !important;
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 4px !important;
+}
+
+.input-element::placeholder {
+  color: #999 !important;
+}
+
+.custom-radio-group .ant-radio-wrapper {
+  color: #1f2937;
+  font-size: 15px;
+  margin-right: 24px;
+}
+
+.custom-upload .ant-upload-list {
+  margin-top: 16px;
+}
+
+/* Form label styles */
+.ant-form-item-label > label {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+}
+
+/* Button styles */
+.ant-btn-primary {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.ant-btn-primary:hover {
+  background-color: #1e40af;
+  border-color: #1e40af;
+}
+
+.ant-btn {
+  border-radius: 4px;
+}
+
+.row-bg-color td.ant-table-cell-fix-left,
+.row-bg-color td.ant-table-cell-fix-right {
+  background-color: white !important;
+}

@@ -1,0 +1,2129 @@
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import {
+  Card,
+  Col,
+  Row,
+  Typography,
+  Button,
+  Statistic,
+  Progress,
+  Skeleton,
+  Select,
+  message,
+  Divider,
+  Table,
+  Input,
+  ColorPicker,
+  Spin,
+} from "antd";
+import { Bar, Line } from "react-chartjs-2";
+import "chart.js/auto";
+import { useSelector } from "react-redux";
+import { usePollDayPartWisePolling } from "../../hooks/useReportingSlices";
+import {
+  recomputePollDayPartWisePolling,
+  savePollDayChartConfig,
+  getPollDayChartConfig,
+  type ChartConfig as APIChartConfig,
+  type PartWisePollingData,
+} from "../../api/reportingApi";
+import { getPartsApi } from "../../api/partApi";
+import {
+  ReloadOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  RiseOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  SaveOutlined,
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+  BarChartOutlined,
+  LineChartOutlined,
+  TableOutlined,
+  EditOutlined,
+  DragOutlined,
+} from "@ant-design/icons";
+import { RootState } from "../../redux/store";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Rnd } from "react-rnd";
+
+const { Title } = Typography;
+
+// Add fullscreen styles
+const fullscreenStyles = `
+  .chart-fullscreen-container:fullscreen {
+    padding: 20px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chart-fullscreen-container:fullscreen .ant-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chart-fullscreen-container:fullscreen .ant-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chart-fullscreen-container:fullscreen canvas {
+    max-height: calc(100vh - 150px) !important;
+  }
+
+  /* Fullscreen grid styles */
+  .charts-grid-fullscreen:fullscreen {
+    padding: 20px;
+    background: #f5f5f5;
+    overflow-y: auto;
+  }
+
+  /* Drag handle styles */
+  .drag-handle {
+    cursor: grab;
+    padding: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .drag-handle:hover {
+    background: #e0e0e0;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  /* Dragging styles */
+  .chart-card-dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+  }
+
+  /* Resizable chart container */
+  .resizable-chart-container {
+    padding: 8px;
+  }
+
+  .resizable-chart-container .react-resizable-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+  }
+
+  .resizable-chart-container .react-resizable-handle-se {
+    bottom: 0;
+    right: 0;
+    cursor: se-resize;
+  }
+
+  /* RND resize handles */
+  .resize-handle {
+    background: #1890ff;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+`;
+
+interface ChartConfig {
+  id: string;
+  selectedParts: number[];
+  viewType?: "bar" | "line" | "table";
+  customTitle?: string;
+  chartColor?: string;
+  order?: number;
+  width?: number;
+  height?: number;
+}
+
+// Sortable Chart Item Component
+interface SortableChartItemProps {
+  chart: ChartConfig;
+  index: number;
+  allParts: PartWisePollingData[];
+  saveStatus: { [key: string]: "saved" | "saving" | "unsaved" };
+  editingTitleId: string | null;
+  editingTitleValue: string;
+  onUpdateChartParts: (chartId: string, parts: number[]) => void;
+  onUpdateChartViewType: (chartId: string, viewType: "bar" | "line" | "table") => void;
+  onUpdateChartColor: (chartId: string, color: string) => void;
+  onUpdateChartSize: (chartId: string, width: number, height: number) => void;
+  onSaveChart: (chartId: string) => void;
+  onRemoveChart: (chartId: string) => void;
+  onToggleFullscreen: (chartId: string) => void;
+  onTitleDoubleClick: (chartId: string, currentTitle: string) => void;
+  onTitleSave: (chartId: string) => void;
+  onTitleCancel: () => void;
+  onTitleKeyDown: (e: React.KeyboardEvent, chartId: string) => void;
+  setEditingTitleValue: (value: string) => void;
+  fullscreenChartId: string | null;
+  chartsLength: number;
+  partNumbers: number[];
+  loadingParts: boolean;
+  renderDropdownWithSelectAll: (chartId: string) => React.ReactNode;
+  partWisePollingLoading: boolean;
+  getChartDataForParts: (selectedParts: number[], chartColor: string) => any;
+  getLineChartDataForParts: (selectedParts: number[], chartColor: string) => any;
+  getTableDataForParts: (selectedParts: number[]) => any;
+  partWiseChartOptions: any;
+  partWiseLineChartOptions: any;
+  chartRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+}
+
+const SortableChartItem: React.FC<SortableChartItemProps> = ({
+  chart,
+  index,
+  allParts,
+  saveStatus,
+  editingTitleId,
+  editingTitleValue,
+  onUpdateChartParts,
+  onUpdateChartViewType,
+  onUpdateChartColor,
+  onUpdateChartSize,
+  onSaveChart,
+  onRemoveChart,
+  onToggleFullscreen,
+  onTitleDoubleClick,
+  onTitleSave,
+  onTitleCancel,
+  onTitleKeyDown,
+  setEditingTitleValue,
+  fullscreenChartId,
+  chartsLength,
+  partNumbers,
+  loadingParts,
+  renderDropdownWithSelectAll,
+  partWisePollingLoading,
+  getChartDataForParts,
+  getLineChartDataForParts,
+  getTableDataForParts,
+  partWiseChartOptions,
+  partWiseLineChartOptions,
+  chartRefs,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: chart.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const filteredParts =
+    chart.selectedParts.length > 0
+      ? allParts.filter((part) => chart.selectedParts.includes(part.partNumber))
+      : allParts;
+
+  const currentSaveStatus = saveStatus[chart.id] || "saved";
+  const isFullscreen = fullscreenChartId === chart.id;
+
+  const tableColumns = [
+    {
+      title: "Part Number",
+      dataIndex: "partNumber",
+      key: "partNumber",
+      sorter: (a: any, b: any) => a.partNumber - b.partNumber,
+      width: 120,
+    },
+    {
+      title: "Total Voters",
+      dataIndex: "totalVoters",
+      key: "totalVoters",
+      sorter: (a: any, b: any) => a.totalVoters - b.totalVoters,
+      render: (value: number) => value.toLocaleString(),
+      width: 130,
+    },
+    {
+      title: "Polled (2025)",
+      dataIndex: "polled2025",
+      key: "polled2025",
+      sorter: (a: any, b: any) => a.polled2025 - b.polled2025,
+      render: (value: number) => (
+        <span style={{ color: "#52c41a", fontWeight: "bold" }}>
+          {value.toLocaleString()}
+        </span>
+      ),
+      width: 130,
+    },
+    {
+      title: "Did Not Vote",
+      dataIndex: "didNotVote",
+      key: "didNotVote",
+      sorter: (a: any, b: any) => a.didNotVote - b.didNotVote,
+      render: (value: number) => (
+        <span style={{ color: "#ff4d4f" }}>{value.toLocaleString()}</span>
+      ),
+      width: 130,
+    },
+    {
+      title: "Turnout %",
+      dataIndex: "turnoutPercentage",
+      key: "turnoutPercentage",
+      sorter: (a: any, b: any) =>
+        parseFloat(a.turnoutPercentage) - parseFloat(b.turnoutPercentage),
+      render: (value: string) => (
+        <span style={{ color: "#722ed1", fontWeight: "bold" }}>
+          {value}%
+        </span>
+      ),
+      width: 120,
+    },
+  ];
+
+  return (
+    <div ref={setNodeRef} style={style} className="resizable-chart-container">
+      <Rnd
+        default={{
+          x: 0,
+          y: 0,
+          width: chart.width || 600,
+          height: chart.height || 450,
+        }}
+        minWidth={400}
+        minHeight={350}
+        bounds="parent"
+        onResizeStop={(e, direction, ref, delta, position) => {
+          const newWidth = parseInt(ref.style.width);
+          const newHeight = parseInt(ref.style.height);
+          onUpdateChartSize(chart.id, newWidth, newHeight);
+        }}
+        enableResizing={{
+          top: false,
+          right: true,
+          bottom: true,
+          left: false,
+          topRight: false,
+          bottomRight: true,
+          bottomLeft: false,
+          topLeft: false,
+        }}
+        disableDragging={true}
+        resizeHandleStyles={{
+          right: { width: "10px", right: "-5px" },
+          bottom: { height: "10px", bottom: "-5px" },
+          bottomRight: {
+            width: "20px",
+            height: "20px",
+            right: "-10px",
+            bottom: "-10px",
+            cursor: "se-resize",
+          },
+        }}
+        resizeHandleClasses={{
+          right: "resize-handle",
+          bottom: "resize-handle",
+          bottomRight: "resize-handle",
+        }}
+      >
+        <div
+          ref={(el) => {
+            if (el) chartRefs.current.set(chart.id, el);
+            else chartRefs.current.delete(chart.id);
+          }}
+          className="chart-fullscreen-container"
+          style={{ height: "100%" }}
+        >
+          <Card className="shadow-lg rounded-lg" style={{ height: "100%" }}>
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2 flex-1">
+                {/* Drag Handle */}
+                <div
+                  {...attributes}
+                  {...listeners}
+                  className="drag-handle"
+                  title="Drag to reorder"
+                >
+                  <DragOutlined style={{ fontSize: "16px", color: "#666" }} />
+                </div>
+
+                {/* Editable Chart Title */}
+                <div className="flex-1">
+                  {editingTitleId === chart.id ? (
+                    <Input
+                      value={editingTitleValue}
+                      onChange={(e) => setEditingTitleValue(e.target.value)}
+                      onBlur={() => onTitleSave(chart.id)}
+                      onKeyDown={(e) => onTitleKeyDown(e, chart.id)}
+                      autoFocus
+                      maxLength={50}
+                      className="font-semibold text-gray-800 text-lg"
+                      style={{ width: "300px" }}
+                      placeholder="Enter chart title"
+                    />
+                  ) : (
+                    <div
+                      onDoubleClick={() =>
+                        onTitleDoubleClick(
+                          chart.id,
+                          chart.customTitle || `Chart ${index + 1}`
+                        )
+                      }
+                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded group"
+                      title="Double-click to edit"
+                    >
+                      <h3 className="font-semibold text-gray-800 text-lg m-0">
+                        {chart.customTitle || `Chart ${index + 1}`}
+                      </h3>
+                      <EditOutlined className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    {currentSaveStatus === "saving" && (
+                      <>
+                        <Spin size="small" />
+                        <span className="text-xs text-blue-500">Saving...</span>
+                      </>
+                    )}
+                    {currentSaveStatus === "unsaved" && (
+                      <span className="text-xs text-orange-500">Unsaved</span>
+                    )}
+                    {currentSaveStatus === "saved" && (
+                      <span className="text-xs text-green-500">Saved</span>
+                    )}
+
+                    <Button
+                      icon={<SaveOutlined />}
+                      onClick={() => onSaveChart(chart.id)}
+                      loading={currentSaveStatus === "saving"}
+                      size="small"
+                      type={
+                        currentSaveStatus === "unsaved" ? "primary" : "default"
+                      }
+                      title="Save this chart"
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="text"
+                  icon={
+                    isFullscreen ? (
+                      <FullscreenExitOutlined />
+                    ) : (
+                      <FullscreenOutlined />
+                    )
+                  }
+                  onClick={() => onToggleFullscreen(chart.id)}
+                  size="small"
+                  title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                />
+                {chartsLength > 1 && (
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => onRemoveChart(chart.id)}
+                    size="small"
+                    title="Remove Chart"
+                  />
+                )}
+              </div>
+            </div>
+
+            <Select
+              mode="multiple"
+              placeholder="Select Parts (All by default)"
+              value={chart.selectedParts}
+              onChange={(value) => onUpdateChartParts(chart.id, value)}
+              style={{ width: "100%", marginBottom: 16 }}
+              loading={loadingParts}
+              showSearch
+              allowClear
+              maxTagCount="responsive"
+              filterOption={(input, option) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              options={partNumbers.map((pn) => ({
+                value: pn,
+                label: `Part ${pn}`,
+              }))}
+              dropdownRender={(menu) => (
+                <>
+                  {renderDropdownWithSelectAll(chart.id)}
+                  {menu}
+                </>
+              )}
+            />
+
+            {/* Chart Controls: Color Picker and View Type */}
+            <div className="flex gap-3 mb-4 items-center justify-between">
+              {/* Color Picker */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 font-medium">
+                  Chart Color:
+                </span>
+                <ColorPicker
+                  value={chart.chartColor || "#1890ff"}
+                  onChange={(color) => {
+                    const hexColor = color.toHexString();
+                    onUpdateChartColor(chart.id, hexColor);
+                  }}
+                  showText
+                  presets={[
+                    {
+                      label: "Recommended",
+                      colors: [
+                        "#1890ff",
+                        "#52c41a",
+                        "#faad14",
+                        "#f5222d",
+                        "#722ed1",
+                        "#13c2c2",
+                        "#eb2f96",
+                        "#fa8c16",
+                      ],
+                    },
+                  ]}
+                />
+              </div>
+
+              {/* View Type Toggle Buttons */}
+              <Button.Group>
+                <Button
+                  type={
+                    chart.viewType === "bar" || !chart.viewType
+                      ? "primary"
+                      : "default"
+                  }
+                  icon={<BarChartOutlined />}
+                  onClick={() => onUpdateChartViewType(chart.id, "bar")}
+                  title="Bar Chart View"
+                >
+                  Bar
+                </Button>
+                <Button
+                  type={chart.viewType === "line" ? "primary" : "default"}
+                  icon={<LineChartOutlined />}
+                  onClick={() => onUpdateChartViewType(chart.id, "line")}
+                  title="Line Chart View"
+                >
+                  Line
+                </Button>
+                <Button
+                  type={chart.viewType === "table" ? "primary" : "default"}
+                  icon={<TableOutlined />}
+                  onClick={() => onUpdateChartViewType(chart.id, "table")}
+                  title="Table View"
+                >
+                  Table
+                </Button>
+              </Button.Group>
+            </div>
+
+            <div
+              style={{
+                height: `${(chart.height || 450) - 200}px`,
+                overflow: "auto",
+              }}
+            >
+              {partWisePollingLoading ? (
+                <Skeleton active paragraph={{ rows: 8 }} />
+              ) : filteredParts.length > 0 ? (
+                <>
+                  {currentSaveStatus === "saving" && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        zIndex: 10,
+                      }}
+                    >
+                      <Spin size="large" tip="Auto-saving..." />
+                    </div>
+                  )}
+                  {/* Render based on viewType */}
+                  {(chart.viewType === "bar" || !chart.viewType) && (
+                    <Bar
+                      data={getChartDataForParts(
+                        chart.selectedParts,
+                        chart.chartColor || "#1890ff"
+                      )}
+                      options={partWiseChartOptions}
+                      plugins={[
+                        {
+                          id: "datalabels",
+                          afterDraw: (chartInstance) => {
+                            const ctx = chartInstance.ctx;
+                            chartInstance.data.datasets.forEach((dataset, i) => {
+                              const meta = chartInstance.getDatasetMeta(i);
+                              meta.data.forEach((bar, idx) => {
+                                const data = dataset.data[idx];
+                                if (data) {
+                                  ctx.fillStyle = "#1f2937";
+                                  ctx.font = "bold 11px Arial";
+                                  ctx.textAlign = "center";
+                                  ctx.fillText(
+                                    (data as number).toLocaleString(),
+                                    bar.x,
+                                    bar.y - 10
+                                  );
+                                }
+                              });
+                            });
+                          },
+                        },
+                      ]}
+                    />
+                  )}
+                  {chart.viewType === "line" && (
+                    <Line
+                      data={getLineChartDataForParts(
+                        chart.selectedParts,
+                        chart.chartColor || "#1890ff"
+                      )}
+                      options={partWiseLineChartOptions}
+                    />
+                  )}
+                  {chart.viewType === "table" && (
+                    <div style={{ height: "100%", overflowY: "auto" }}>
+                      <Table
+                        dataSource={getTableDataForParts(chart.selectedParts)}
+                        pagination={{ pageSize: 10 }}
+                        size="small"
+                        columns={tableColumns}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500">
+                    {chart.selectedParts.length > 0
+                      ? "No data for selected parts"
+                      : "No polling data available"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      </Rnd>
+    </div>
+  );
+};
+
+export default function StaticPollDayDashboard() {
+  const [electionName, setElectionName] = useState("");
+  const [pollingDate] = useState<string | undefined>(undefined); // future date picker
+  const [partNumbers, setPartNumbers] = useState<number[]>([]);
+  const [loadingParts, setLoadingParts] = useState(false);
+  // Auto-save state variables
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<{
+    [key: string]: "saved" | "saving" | "unsaved";
+  }>({});
+
+  // Multiple chart configurations (up to 20 charts)
+  const [charts, setCharts] = useState<ChartConfig[]>([
+    { 
+      id: "1", 
+      selectedParts: [], 
+      viewType: "bar", 
+      chartColor: "#1890ff",
+      order: 0,
+      width: 600,
+      height: 450
+    }, // Start with one chart with default blue
+  ]);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [fullscreenChartId, setFullscreenChartId] = useState<string | null>(
+    null
+  );
+  const [isGridFullscreen, setIsGridFullscreen] = useState(false);
+
+  // Title editing state
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [editingTitleValue, setEditingTitleValue] = useState<string>("");
+
+  // Refs for chart containers (for native fullscreen API)
+  const chartRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const chartsGridRef = useRef<HTMLDivElement>(null);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const allElections = useSelector(
+    (state: RootState) => state.election.allElections
+  );
+  const selectedElectionId = useSelector(
+    (state: any) => state.election.selectedElectionId
+  );
+  const accountId = useMemo(
+    () =>
+      Number(localStorage.getItem("accountId")) ||
+      Number(localStorage.getItem("userId")) ||
+      0,
+    []
+  );
+
+  // Fetch ALL parts data, filtering done on frontend
+  const partWisePolling = usePollDayPartWisePolling(
+    accountId,
+    Number(selectedElectionId) || 0,
+    pollingDate
+  );
+  const [recomputing, setRecomputing] = useState(false);
+
+  // Fetch part numbers for the dropdown
+  const fetchParts = useCallback(async () => {
+    if (!selectedElectionId) return;
+
+    try {
+      setLoadingParts(true);
+      const response = await getPartsApi(parseInt(selectedElectionId));
+      const validParts = (
+        Array.isArray(response.data) ? response.data : []
+      ).map((part: any) => ({
+        ...part,
+        partNo: Number(part?.partNo?.trim() ?? 0),
+      }));
+
+      const partNumbersFromResponse = validParts
+        .map((part: any) => part.partNo)
+        .filter((pn: any) => !isNaN(pn) && pn !== null && pn !== undefined)
+        .sort((a: number, b: number) => a - b);
+
+      setPartNumbers(partNumbersFromResponse);
+    } catch (error) {
+      console.error("Error fetching parts:", error);
+      setPartNumbers([]);
+    } finally {
+      setLoadingParts(false);
+    }
+  }, [selectedElectionId]);
+
+  useEffect(() => {
+    fetchParts();
+  }, [fetchParts]);
+
+  const handleRefresh = async () => {
+    if (!accountId || !selectedElectionId) return;
+    try {
+      setRecomputing(true);
+      await recomputePollDayPartWisePolling(
+        accountId,
+        Number(selectedElectionId),
+        pollingDate
+      );
+      partWisePolling.reload();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRecomputing(false);
+    }
+  };
+
+  // Chart Management Functions
+  const addChart = () => {
+    if (charts.length >= 20) {
+      message.warning("Maximum 20 charts allowed");
+      return;
+    }
+    const newChart: ChartConfig = {
+      id: Date.now().toString(),
+      selectedParts: [],
+      viewType: "bar",
+      chartColor: "#1890ff", // Default blue color
+      order: charts.length,
+      width: 600,
+      height: 450,
+    };
+    setCharts([...charts, newChart]);
+  };
+
+  const removeChart = (chartId: string) => {
+    if (charts.length === 1) {
+      message.warning("At least one chart is required");
+      return;
+    }
+    setCharts(charts.filter((chart) => chart.id !== chartId));
+  };
+
+  const updateChartParts = (chartId: string, selectedParts: number[]) => {
+    setCharts(
+      charts.map((chart) =>
+        chart.id === chartId ? { ...chart, selectedParts } : chart
+      )
+    );
+    setSaveStatus((prev) => ({ ...prev, [chartId]: "unsaved" }));
+  };
+
+  const updateChartViewType = (
+    chartId: string,
+    viewType: "bar" | "line" | "table"
+  ) => {
+    setCharts(
+      charts.map((chart) =>
+        chart.id === chartId ? { ...chart, viewType } : chart
+      )
+    );
+    setSaveStatus((prev) => ({ ...prev, [chartId]: "unsaved" }));
+  };
+
+  const updateChartColor = (chartId: string, chartColor: string) => {
+    setCharts(
+      charts.map((chart) =>
+        chart.id === chartId ? { ...chart, chartColor } : chart
+      )
+    );
+    setSaveStatus((prev) => ({ ...prev, [chartId]: "unsaved" })); // ADDED: Mark as unsaved
+  };
+
+  const updateChartTitle = (chartId: string, customTitle: string) => {
+    setCharts(
+      charts.map((chart) =>
+        chart.id === chartId ? { ...chart, customTitle } : chart
+      )
+    );
+    setSaveStatus((prev) => ({ ...prev, [chartId]: "unsaved" })); // ADDED: Mark as unsaved
+  };
+
+  const updateChartSize = (chartId: string, width: number, height: number) => {
+    setCharts(
+      charts.map((chart) =>
+        chart.id === chartId ? { ...chart, width, height } : chart
+      )
+    );
+    setSaveStatus((prev) => ({ ...prev, [chartId]: "unsaved" }));
+  };
+
+  // Drag and drop handler
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setCharts((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        const reorderedCharts = arrayMove(items, oldIndex, newIndex);
+        
+        // Update order property
+        const updatedCharts = reorderedCharts.map((chart, index) => ({
+          ...chart,
+          order: index,
+        }));
+
+        // Mark all as unsaved after reordering
+        const newSaveStatus: { [key: string]: "unsaved" } = {};
+        updatedCharts.forEach((chart) => {
+          newSaveStatus[chart.id] = "unsaved";
+        });
+        setSaveStatus(newSaveStatus);
+
+        return updatedCharts;
+      });
+
+      message.success("Charts reordered. Don't forget to save!");
+    }
+  };
+
+  // Auto-save functionality
+  const autoSaveChartConfig = useCallback(async () => {
+    if (!autoSaveEnabled || !accountId || !selectedElectionId) return;
+
+    try {
+      setSavingConfig(true);
+
+      // Convert local chart configs to API format
+      const chartConfigs: APIChartConfig[] = charts.map((chart) => ({
+        id: chart.id,
+        selectedParts: chart.selectedParts,
+        viewType: chart.viewType || "bar",
+        customTitle: chart.customTitle,
+        chartColor: chart.chartColor || "#1890ff",
+        order: chart.order ?? 0,
+        width: chart.width ?? 600,
+        height: chart.height ?? 450,
+      }));
+
+      await savePollDayChartConfig(accountId, selectedElectionId, chartConfigs);
+
+      // Update save status for all charts
+      const newSaveStatus: { [key: string]: "saved" } = {};
+      charts.forEach((chart) => {
+        newSaveStatus[chart.id] = "saved";
+      });
+      setSaveStatus(newSaveStatus);
+
+      console.log("Auto-saved chart configuration");
+    } catch (error) {
+      console.error("Error auto-saving configuration:", error);
+    } finally {
+      setSavingConfig(false);
+    }
+  }, [charts, accountId, selectedElectionId, autoSaveEnabled]);
+
+  const saveIndividualChart = async (chartId: string) => {
+    if (!accountId || !selectedElectionId) {
+      message.warning("Please select an election first");
+      return;
+    }
+
+    try {
+      setSaveStatus((prev) => ({ ...prev, [chartId]: "saving" }));
+
+      // Convert local chart configs to API format
+      const chartConfigs: APIChartConfig[] = charts.map((chart) => ({
+        id: chart.id,
+        selectedParts: chart.selectedParts,
+        viewType: chart.viewType || "bar",
+        customTitle: chart.customTitle,
+        chartColor: chart.chartColor || "#1890ff",
+        order: chart.order ?? 0,
+        width: chart.width ?? 600,
+        height: chart.height ?? 450,
+      }));
+
+      await savePollDayChartConfig(accountId, selectedElectionId, chartConfigs);
+
+      setSaveStatus((prev) => ({ ...prev, [chartId]: "saved" }));
+      message.success("Chart configuration saved successfully");
+    } catch (error) {
+      console.error("Error saving configuration:", error);
+      setSaveStatus((prev) => ({ ...prev, [chartId]: "unsaved" }));
+      message.error("Failed to save chart configuration");
+    }
+  };
+
+  const handleTitleDoubleClick = (chartId: string, currentTitle: string) => {
+    setEditingTitleId(chartId);
+    setEditingTitleValue(currentTitle);
+  };
+
+  const handleTitleSave = (chartId: string) => {
+    const trimmedTitle = editingTitleValue.trim();
+    updateChartTitle(chartId, trimmedTitle);
+    setEditingTitleId(null);
+    setEditingTitleValue("");
+  };
+
+  const handleTitleCancel = () => {
+    setEditingTitleId(null);
+    setEditingTitleValue("");
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent, chartId: string) => {
+    if (e.key === "Enter") {
+      handleTitleSave(chartId);
+    } else if (e.key === "Escape") {
+      handleTitleCancel();
+    }
+  };
+
+  const selectAllParts = (chartId: string) => {
+    if (partNumbers.length === 0) {
+      message.warning("No parts available to select");
+      return;
+    }
+    updateChartParts(chartId, [...partNumbers]);
+  };
+
+  const clearAllParts = (chartId: string) => {
+    updateChartParts(chartId, []);
+  };
+
+  const renderDropdownWithSelectAll = (chartId: string) => (
+    <div style={{ padding: "8px" }}>
+      <div
+        style={{
+          marginBottom: "8px",
+          display: "flex",
+          gap: "8px",
+          justifyContent: "space-between",
+        }}
+      >
+        <Button
+          size="small"
+          type="link"
+          onClick={() => selectAllParts(chartId)}
+          style={{ padding: "0", fontSize: "12px", fontWeight: "bold" }}
+        >
+          Select All Parts
+        </Button>
+        <Button
+          size="small"
+          type="link"
+          onClick={() => clearAllParts(chartId)}
+          style={{ padding: "0", fontSize: "12px", fontWeight: "bold" }}
+        >
+          Clear All
+        </Button>
+      </div>
+      <Divider style={{ margin: "8px 0" }} />
+    </div>
+  );
+
+  const toggleFullscreen = async (chartId: string) => {
+    const element = chartRefs.current.get(chartId);
+    if (!element) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        await element.requestFullscreen();
+        setFullscreenChartId(chartId);
+      } else {
+        // Exit fullscreen
+        await document.exitFullscreen();
+        setFullscreenChartId(null);
+      }
+    } catch (error) {
+      console.error("Error toggling fullscreen:", error);
+      message.error("Failed to toggle fullscreen mode");
+    }
+  };
+
+  const toggleGridFullscreen = async () => {
+    const element = chartsGridRef.current;
+    if (!element) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        await element.requestFullscreen();
+        setIsGridFullscreen(true);
+      } else {
+        // Exit fullscreen
+        await document.exitFullscreen();
+        setIsGridFullscreen(false);
+      }
+    } catch (error) {
+      console.error("Error toggling grid fullscreen:", error);
+      message.error("Failed to toggle fullscreen mode");
+    }
+  };
+
+  // Listen for fullscreen changes (e.g., user presses ESC)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setFullscreenChartId(null);
+        setIsGridFullscreen(false);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  // Save chart configuration
+  const saveChartConfiguration = async () => {
+    if (!accountId || !selectedElectionId) {
+      message.warning("Please select an election first");
+      return;
+    }
+
+    try {
+      setSavingConfig(true);
+
+      // Convert local chart configs to API format
+      const chartConfigs: APIChartConfig[] = charts.map((chart) => ({
+        id: chart.id,
+        selectedParts: chart.selectedParts,
+        viewType: chart.viewType || "bar",
+        customTitle: chart.customTitle,
+        chartColor: chart.chartColor || "#1890ff",
+        order: chart.order ?? 0,
+        width: chart.width ?? 600,
+        height: chart.height ?? 450,
+      }));
+
+      await savePollDayChartConfig(accountId, selectedElectionId, chartConfigs);
+
+      message.success("Chart configuration saved successfully");
+    } catch (error) {
+      console.error("Error saving configuration:", error);
+      // Error message already shown by API function
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  // Load saved configuration on mount
+  useEffect(() => {
+    const loadSavedConfiguration = async () => {
+      if (!accountId || !selectedElectionId) return;
+
+      try {
+        const savedConfig = await getPollDayChartConfig(
+          accountId,
+          selectedElectionId
+        );
+
+        if (savedConfig?.charts && savedConfig.charts.length > 0) {
+          // Convert API chart configs to local format
+          const loadedCharts: ChartConfig[] = savedConfig.charts.map(
+            (chart) => ({
+              id: chart.id,
+              selectedParts: chart.selectedParts,
+              viewType: chart.viewType || "bar",
+              customTitle: chart.customTitle,
+              chartColor: chart.chartColor || "#1890ff",
+              order: chart.order ?? 0,
+              width: chart.width ?? 600,
+              height: chart.height ?? 450,
+            })
+          );
+
+          // Sort by order
+          loadedCharts.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+          setCharts(loadedCharts);
+          console.log("Loaded chart configuration:", loadedCharts);
+        }
+      } catch (error) {
+        console.error("Error loading configuration:", error);
+        // Error message already shown by API function, or 404 (no config) is silent
+      }
+    };
+
+    loadSavedConfiguration();
+  }, [accountId, selectedElectionId]);
+
+  // Calculate overall summary statistics from ALL parts
+  const summaryStats = useMemo(() => {
+    const allParts = partWisePolling.data?.parts || [];
+
+    if (allParts.length === 0) {
+      return {
+        totalVoters: 0,
+        polled2025: 0,
+        didNotVote: 0,
+        percentage: 0,
+        firstTimeVoters: 0,
+      };
+    }
+
+    // Calculate totals from ALL parts
+    const totalVoters = allParts.reduce(
+      (sum, part) => sum + (part.totalVoters || 0),
+      0
+    );
+    const polled2025 = allParts.reduce(
+      (sum, part) => sum + (part.polled2025 || 0),
+      0
+    );
+    const didNotVote = allParts.reduce(
+      (sum, part) => sum + (part.didNotVote || 0),
+      0
+    );
+    const percentage = totalVoters > 0 ? (polled2025 / totalVoters) * 100 : 0;
+
+    return {
+      totalVoters,
+      polled2025,
+      didNotVote,
+      percentage,
+      firstTimeVoters: 0, // Not available in part-wise API
+    };
+  }, [partWisePolling.data?.parts]);
+
+  useEffect(() => {
+    const election = allElections.find(
+      (election) => election.id === selectedElectionId
+    );
+    if (election) {
+      setElectionName(election.electionName);
+    }
+  }, [allElections, selectedElectionId]);
+
+  useEffect(() => {
+    if (charts.length === 0) return;
+
+    const timeoutId = setTimeout(() => {
+      autoSaveChartConfig();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(timeoutId);
+  }, [charts, autoSaveChartConfig]);
+
+  // Chart options
+  const stackedBarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top" as const,
+        labels: {
+          font: { size: 12, weight: "bold" as const },
+          padding: 15,
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const label = context.dataset.label || "";
+            const value = context.parsed.y || 0;
+            const total = context.chart.data.datasets.reduce(
+              (sum: number, dataset: any) => {
+                return sum + (dataset.data[context.dataIndex] || 0);
+              },
+              0
+            );
+            const percentage =
+              total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+            return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: { display: false },
+      },
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => value.toLocaleString(),
+        },
+      },
+    },
+  };
+
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            return `Voters: ${context.parsed.y.toLocaleString()}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: "rgba(0, 0, 0, 0.05)" },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => value.toLocaleString(),
+        },
+        grid: { color: "rgba(0, 0, 0, 0.05)" },
+      },
+    },
+  };
+
+  const horizontalBarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: "y" as const,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            return `Polled: ${context.parsed.x.toLocaleString()}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => value.toLocaleString(),
+        },
+      },
+      y: {
+        grid: { display: false },
+      },
+    },
+  };
+
+  // Generate chart data for specific parts
+  const getChartDataForParts = (
+    selectedParts: number[],
+    chartColor: string = "#1890ff"
+  ) => {
+    const allParts = partWisePolling.data?.parts || [];
+    const filteredParts =
+      selectedParts.length > 0
+        ? allParts.filter((part) => selectedParts.includes(part.partNumber))
+        : allParts;
+
+    const labels: string[] = [];
+    const polledData: number[] = [];
+
+    // Use custom color or default blue
+    const barColor = chartColor ? `${chartColor}CC` : "rgba(24, 144, 255, 0.8)"; // Add CC for 80% opacity
+    const borderColor = chartColor || "rgba(24, 144, 255, 1)";
+
+    filteredParts.forEach((part) => {
+      labels.push(`Part ${part.partNumber}`);
+      polledData.push(part.polled2025 || 0);
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Polling Count",
+          data: polledData,
+          backgroundColor: barColor,
+          borderColor: borderColor,
+          borderWidth: 2,
+          borderRadius: 6,
+          barThickness: "flex" as const,
+          maxBarThickness: 60,
+        },
+      ],
+      filteredParts, // Store for tooltip access
+    };
+  };
+
+  // Generate line chart data for specific parts
+  const getLineChartDataForParts = (
+    selectedParts: number[],
+    chartColor: string = "#1890ff"
+  ) => {
+    const allParts = partWisePolling.data?.parts || [];
+    const filteredParts =
+      selectedParts.length > 0
+        ? allParts.filter((part) => selectedParts.includes(part.partNumber))
+        : allParts;
+
+    const labels: string[] = [];
+    const polledData: number[] = [];
+
+    // Use custom color or default blue
+    const lineColor = chartColor
+      ? `${chartColor}CC`
+      : "rgba(24, 144, 255, 0.8)";
+    const borderColor = chartColor || "rgba(24, 144, 255, 1)";
+
+    filteredParts.forEach((part) => {
+      labels.push(`Part ${part.partNumber}`);
+      polledData.push(part.polled2025 || 0);
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Polling Count",
+          data: polledData,
+          borderColor: borderColor,
+          backgroundColor: lineColor,
+          borderWidth: 3,
+          tension: 0.4, // Smooth curve
+          fill: true,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: borderColor,
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+        },
+      ],
+      filteredParts,
+    };
+  };
+
+  // Generate table data for specific parts
+  const getTableDataForParts = (selectedParts: number[]) => {
+    const allParts = partWisePolling.data?.parts || [];
+    const filteredParts =
+      selectedParts.length > 0
+        ? allParts.filter((part) => selectedParts.includes(part.partNumber))
+        : allParts;
+
+    return filteredParts.map((part, index) => ({
+      key: index,
+      partNumber: part.partNumber,
+      totalVoters: part.totalVoters,
+      polled2025: part.polled2025,
+      didNotVote: part.didNotVote,
+      turnoutPercentage: part.turnoutPercentage.toFixed(2),
+    }));
+  };
+
+  const partWiseChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: "top" as const,
+        labels: {
+          font: { size: 13 },
+          padding: 15,
+          color: "#374151",
+        },
+      },
+      datalabels: {
+        display: true,
+        color: "#1f2937",
+        anchor: "end" as const,
+        align: "top" as const,
+        formatter: (value: number) => value.toLocaleString(),
+        font: {
+          size: 11,
+          weight: "bold" as const,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(31, 41, 55, 0.95)",
+        padding: 12,
+        titleFont: { size: 14, weight: "bold" as const },
+        bodyFont: { size: 13 },
+        borderColor: "rgba(209, 213, 219, 0.3)",
+        borderWidth: 1,
+        callbacks: {
+          label: (context: any) => {
+            const filteredParts = context.chart.data.filteredParts || [];
+            const partIndex = context.dataIndex;
+            const part = filteredParts[partIndex];
+
+            if (part) {
+              return [
+                `Polled: ${part.polled2025.toLocaleString()} voters`,
+                `Total Voters: ${part.totalVoters.toLocaleString()}`,
+              ];
+            }
+            return `Polled: ${context.parsed.y || 0} voters`;
+          },
+          afterLabel: (context: any) => {
+            const filteredParts = context.chart.data.filteredParts || [];
+            const partIndex = context.dataIndex;
+            const part = filteredParts[partIndex];
+            if (part) {
+              return `Turnout: ${part.turnoutPercentage.toFixed(2)}%`;
+            }
+            return "";
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        //  UPDATED X-axis label
+        title: {
+          display: true,
+          text: "Part Number", //  Added X-axis label
+          font: {
+            size: 14,
+            weight: "bold" as const,
+          },
+          color: "#374151",
+          padding: { top: 10, bottom: 0 },
+        },
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: { size: 12 },
+          color: "#4B5563",
+        },
+      },
+      y: {
+        //  UPDATED Y-axis label
+        title: {
+          display: true,
+          text: "Voter Count", //  Added Y-axis label
+          font: {
+            size: 14,
+            weight: "bold" as const,
+          },
+          color: "#374151",
+          padding: { top: 0, bottom: 10 },
+        },
+        beginAtZero: true,
+        suggestedMin: 0,
+        suggestedMax: 100, // Show scale even when values are 0
+        grid: {
+          color: "rgba(229, 231, 235, 0.8)",
+          drawBorder: false,
+        },
+        ticks: {
+          font: { size: 12 },
+          color: "#6B7280",
+          callback: (value: any) => value.toLocaleString(),
+        },
+      },
+    },
+    animation: {
+      duration: 800,
+      easing: "easeInOutQuad" as const,
+    },
+  };
+
+  const partWiseLineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: "top" as const,
+        labels: {
+          font: { size: 13 },
+          padding: 15,
+          color: "#374151",
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(31, 41, 55, 0.95)",
+        padding: 12,
+        titleFont: { size: 14, weight: "bold" as const },
+        bodyFont: { size: 13 },
+        borderColor: "rgba(209, 213, 219, 0.3)",
+        borderWidth: 1,
+        callbacks: {
+          label: (context: any) => {
+            const filteredParts = context.chart.data.filteredParts || [];
+            const partIndex = context.dataIndex;
+            const part = filteredParts[partIndex];
+
+            if (part) {
+              return [
+                `Polled: ${part.polled2025.toLocaleString()} voters`,
+                `Total Voters: ${part.totalVoters.toLocaleString()}`,
+              ];
+            }
+            return `Polled: ${context.parsed.y || 0} voters`;
+          },
+          afterLabel: (context: any) => {
+            const filteredParts = context.chart.data.filteredParts || [];
+            const partIndex = context.dataIndex;
+            const part = filteredParts[partIndex];
+            if (part) {
+              return `Turnout: ${part.turnoutPercentage.toFixed(2)}%`;
+            }
+            return "";
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Part Number",
+          font: {
+            size: 14,
+            weight: "bold" as const,
+          },
+          color: "#374151",
+          padding: { top: 10, bottom: 0 },
+        },
+        grid: {
+          color: "rgba(229, 231, 235, 0.5)",
+          drawBorder: false,
+        },
+        ticks: {
+          font: { size: 12 },
+          color: "#4B5563",
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Voter Count",
+          font: {
+            size: 14,
+            weight: "bold" as const,
+          },
+          color: "#374151",
+          padding: { top: 0, bottom: 10 },
+        },
+        beginAtZero: true,
+        suggestedMin: 0,
+        suggestedMax: 100,
+        grid: {
+          color: "rgba(229, 231, 235, 0.8)",
+          drawBorder: false,
+        },
+        ticks: {
+          font: { size: 12 },
+          color: "#6B7280",
+          callback: (value: any) => value.toLocaleString(),
+        },
+      },
+    },
+    animation: {
+      duration: 800,
+      easing: "easeInOutQuad" as const,
+    },
+  };
+
+  return (
+    <div className="p-6 bg-gray-50">
+      {/* Add fullscreen styles */}
+      <style>{fullscreenStyles}</style>
+
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">{electionName}</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Real-time Poll Day Dashboard - {charts.length} Chart
+            {charts.length !== 1 ? "s" : ""} Active
+            {autoSaveEnabled && " • Auto-save enabled"}
+          </p>
+        </div>
+        <div className="flex gap-3 items-center">
+          <Button
+            icon={<PlusOutlined />}
+            onClick={addChart}
+            disabled={charts.length >= 20}
+          >
+            Add Chart ({charts.length}/20)
+          </Button>
+          <Button
+            icon={isGridFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+            onClick={toggleGridFullscreen}
+            type={isGridFullscreen ? "primary" : "default"}
+          >
+            {isGridFullscreen ? "Exit" : "Fullscreen"}
+          </Button>
+          <Button
+            icon={<ReloadOutlined spin={recomputing} />}
+            loading={recomputing}
+            onClick={handleRefresh}
+          >
+            Refresh Data
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary Metric Cards */}
+      <Row gutter={[16, 16]} className="my-8">
+        <Col span={24 / 4}>
+          <Card
+            className="shadow-md hover:shadow-lg transition-shadow"
+            style={{ height: "100%" }}
+          >
+            <Statistic
+              title="Total Voters"
+              value={summaryStats.totalVoters}
+              prefix={<UserOutlined style={{ color: "#1890ff" }} />}
+              valueStyle={{ color: "#1890ff", fontSize: "24px" }}
+            />
+          </Card>
+        </Col>
+        <Col span={24 / 4}>
+          <Card
+            className="shadow-md hover:shadow-lg transition-shadow"
+            style={{ height: "100%" }}
+          >
+            <Statistic
+              title="Voted (2025)"
+              value={summaryStats.polled2025}
+              prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
+              valueStyle={{ color: "#52c41a", fontSize: "24px" }}
+            />
+            <Progress
+              percent={Number(summaryStats.percentage)}
+              strokeColor="#52c41a"
+              size="small"
+              showInfo={false}
+            />
+          </Card>
+        </Col>
+        <Col span={24 / 4}>
+          <Card
+            className="shadow-md hover:shadow-lg transition-shadow"
+            style={{ height: "100%" }}
+          >
+            <Statistic
+              title="Did Not Vote"
+              value={summaryStats.didNotVote}
+              prefix={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
+              valueStyle={{ color: "#ff4d4f", fontSize: "24px" }}
+            />
+          </Card>
+        </Col>
+        <Col span={24 / 4}>
+          <Card
+            className="shadow-md hover:shadow-lg transition-shadow"
+            style={{ height: "100%" }}
+          >
+            <Statistic
+              title="Overall Turnout"
+              value={summaryStats.percentage}
+              suffix="%"
+              prefix={<RiseOutlined style={{ color: "#722ed1" }} />}
+              valueStyle={{ color: "#722ed1", fontSize: "24px" }}
+              precision={2}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Multiple Charts: Part-wise Polling Count with Drag & Drop and Resize */}
+      <div ref={chartsGridRef} className="charts-grid-fullscreen my-8">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={charts.map((c) => c.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+                gap: "16px",
+              }}
+            >
+              {charts.map((chart, index) => {
+                const allParts = partWisePolling.data?.parts || [];
+                return (
+                  <SortableChartItem
+                    key={chart.id}
+                    chart={chart}
+                    index={index}
+                    allParts={allParts}
+                    saveStatus={saveStatus}
+                    editingTitleId={editingTitleId}
+                    editingTitleValue={editingTitleValue}
+                    onUpdateChartParts={updateChartParts}
+                    onUpdateChartViewType={updateChartViewType}
+                    onUpdateChartColor={updateChartColor}
+                    onUpdateChartSize={updateChartSize}
+                    onSaveChart={saveIndividualChart}
+                    onRemoveChart={removeChart}
+                    onToggleFullscreen={toggleFullscreen}
+                    onTitleDoubleClick={handleTitleDoubleClick}
+                    onTitleSave={handleTitleSave}
+                    onTitleCancel={handleTitleCancel}
+                    onTitleKeyDown={handleTitleKeyDown}
+                    setEditingTitleValue={setEditingTitleValue}
+                    fullscreenChartId={fullscreenChartId}
+                    chartsLength={charts.length}
+                    partNumbers={partNumbers}
+                    loadingParts={loadingParts}
+                    renderDropdownWithSelectAll={renderDropdownWithSelectAll}
+                    partWisePollingLoading={partWisePolling.loading}
+                    getChartDataForParts={getChartDataForParts}
+                    getLineChartDataForParts={getLineChartDataForParts}
+                    getTableDataForParts={getTableDataForParts}
+                    partWiseChartOptions={partWiseChartOptions}
+                    partWiseLineChartOptions={partWiseLineChartOptions}
+                    chartRefs={chartRefs}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
+    </div>
+  );
+}
+                className="chart-fullscreen-container"
+              >
+                <Card className="shadow-lg rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex-1">
+                      {/* Editable Chart Title */}
+                      {editingTitleId === chart.id ? (
+                        <Input
+                          value={editingTitleValue}
+                          onChange={(e) => setEditingTitleValue(e.target.value)}
+                          onBlur={() => handleTitleSave(chart.id)}
+                          onKeyDown={(e) => handleTitleKeyDown(e, chart.id)}
+                          autoFocus
+                          maxLength={50}
+                          className="font-semibold text-gray-800 text-lg"
+                          style={{ width: "300px" }}
+                          placeholder="Enter chart title"
+                        />
+                      ) : (
+                        <div
+                          onDoubleClick={() =>
+                            handleTitleDoubleClick(
+                              chart.id,
+                              chart.customTitle || `Chart ${index + 1}`
+                            )
+                          }
+                          className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded group"
+                          title="Double-click to edit"
+                        >
+                          <h3 className="font-semibold text-gray-800 text-lg m-0">
+                            {chart.customTitle || `Chart ${index + 1}`}
+                          </h3>
+                          <EditOutlined className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm" />
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        {currentSaveStatus === "saving" && (
+                          <>
+                            <Spin size="small" />
+                            <span className="text-xs text-blue-500">
+                              Saving...
+                            </span>
+                          </>
+                        )}
+                        {currentSaveStatus === "unsaved" && (
+                          <span className="text-xs text-orange-500">
+                            Unsaved
+                          </span>
+                        )}
+                        {currentSaveStatus === "saved" && (
+                          <span className="text-xs text-green-500">Saved</span>
+                        )}
+
+                        <Button
+                          icon={<SaveOutlined />}
+                          onClick={() => saveIndividualChart(chart.id)}
+                          loading={currentSaveStatus === "saving"}
+                          size="small"
+                          type={
+                            currentSaveStatus === "unsaved"
+                              ? "primary"
+                              : "default"
+                          }
+                          title="Save this chart"
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="text"
+                        icon={
+                          isFullscreen ? (
+                            <FullscreenExitOutlined />
+                          ) : (
+                            <FullscreenOutlined />
+                          )
+                        }
+                        onClick={() => toggleFullscreen(chart.id)}
+                        size="small"
+                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                      />
+                      {charts.length > 1 && (
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => removeChart(chart.id)}
+                          size="small"
+                          title="Remove Chart"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <Select
+                    mode="multiple"
+                    placeholder="Select Parts (All by default)"
+                    value={chart.selectedParts}
+                    onChange={(value) => updateChartParts(chart.id, value)}
+                    style={{ width: "100%", marginBottom: 16 }}
+                    loading={loadingParts}
+                    showSearch
+                    allowClear
+                    maxTagCount="responsive"
+                    filterOption={(input, option) =>
+                      (option?.label ?? "")
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    options={partNumbers.map((pn) => ({
+                      value: pn,
+                      label: `Part ${pn}`,
+                    }))}
+                    dropdownRender={(menu) => (
+                      <>
+                        {renderDropdownWithSelectAll(chart.id)}
+                        {menu}
+                      </>
+                    )}
+                  />
+
+                  {/* Chart Controls: Color Picker and View Type */}
+                  <div className="flex gap-3 mb-4 items-center justify-between">
+                    {/* Color Picker */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600 font-medium">
+                        Chart Color:
+                      </span>
+                      <ColorPicker
+                        value={chart.chartColor || "#1890ff"}
+                        onChange={(color) => {
+                          const hexColor = color.toHexString();
+                          updateChartColor(chart.id, hexColor);
+                        }}
+                        showText
+                        presets={[
+                          {
+                            label: "Recommended",
+                            colors: [
+                              "#1890ff", // Blue
+                              "#52c41a", // Green
+                              "#faad14", // Orange
+                              "#f5222d", // Red
+                              "#722ed1", // Purple
+                              "#13c2c2", // Cyan
+                              "#eb2f96", // Magenta
+                              "#fa8c16", // Volcano
+                            ],
+                          },
+                        ]}
+                      />
+                    </div>
+
+                    {/* View Type Toggle Buttons */}
+                    <Button.Group>
+                      <Button
+                        type={
+                          chart.viewType === "bar" || !chart.viewType
+                            ? "primary"
+                            : "default"
+                        }
+                        icon={<BarChartOutlined />}
+                        onClick={() => updateChartViewType(chart.id, "bar")}
+                        title="Bar Chart View"
+                      >
+                        Bar
+                      </Button>
+                      <Button
+                        type={chart.viewType === "line" ? "primary" : "default"}
+                        icon={<LineChartOutlined />}
+                        onClick={() => updateChartViewType(chart.id, "line")}
+                        title="Line Chart View"
+                      >
+                        Line
+                      </Button>
+                      <Button
+                        type={
+                          chart.viewType === "table" ? "primary" : "default"
+                        }
+                        icon={<TableOutlined />}
+                        onClick={() => updateChartViewType(chart.id, "table")}
+                        title="Table View"
+                      >
+                        Table
+                      </Button>
+                    </Button.Group>
+                  </div>
+
+                  <div style={{ height: "400px" }}>
+                    {partWisePolling.loading ? (
+                      <Skeleton active paragraph={{ rows: 8 }} />
+                    ) : filteredParts.length > 0 ? (
+                      <>
+                        {currentSaveStatus === "saving" && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "50%",
+                              left: "50%",
+                              transform: "translate(-50%, -50%)",
+                              zIndex: 10,
+                            }}
+                          >
+                            <Spin size="large" tip="Auto-saving..." />
+                          </div>
+                        )}
+                        {/* Render based on viewType */}
+                        {(chart.viewType === "bar" || !chart.viewType) && (
+                          <Bar
+                            data={getChartDataForParts(
+                              chart.selectedParts,
+                              chart.chartColor || "#1890ff"
+                            )}
+                            options={partWiseChartOptions}
+                            plugins={[
+                              {
+                                id: "datalabels",
+                                afterDraw: (chart) => {
+                                  const ctx = chart.ctx;
+                                  chart.data.datasets.forEach((dataset, i) => {
+                                    const meta = chart.getDatasetMeta(i);
+                                    meta.data.forEach((bar, index) => {
+                                      const data = dataset.data[index];
+                                      if (data) {
+                                        ctx.fillStyle = "#1f2937";
+                                        ctx.font = "bold 11px Arial";
+                                        ctx.textAlign = "center";
+                                        ctx.fillText(
+                                          data.toLocaleString(),
+                                          bar.x,
+                                          bar.y - 10
+                                        );
+                                      }
+                                    });
+                                  });
+                                },
+                              },
+                            ]}
+                          />
+                        )}
+                        {chart.viewType === "line" && (
+                          <Line
+                            data={getLineChartDataForParts(
+                              chart.selectedParts,
+                              chart.chartColor || "#1890ff"
+                            )}
+                            options={partWiseLineChartOptions}
+                          />
+                        )}
+                        {chart.viewType === "table" && (
+                          <div style={{ height: "400px", overflowY: "auto" }}>
+                            <Table
+                              dataSource={getTableDataForParts(
+                                chart.selectedParts
+                              )}
+                              pagination={{ pageSize: 10 }}
+                              size="small"
+                              columns={[
+                                {
+                                  title: "Part Number",
+                                  dataIndex: "partNumber",
+                                  key: "partNumber",
+                                  sorter: (a, b) => a.partNumber - b.partNumber,
+                                  width: 120,
+                                },
+                                {
+                                  title: "Total Voters",
+                                  dataIndex: "totalVoters",
+                                  key: "totalVoters",
+                                  sorter: (a, b) =>
+                                    a.totalVoters - b.totalVoters,
+                                  render: (value) => value.toLocaleString(),
+                                  width: 130,
+                                },
+                                {
+                                  title: "Polled (2025)",
+                                  dataIndex: "polled2025",
+                                  key: "polled2025",
+                                  sorter: (a, b) => a.polled2025 - b.polled2025,
+                                  render: (value) => (
+                                    <span
+                                      style={{
+                                        color: "#52c41a",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      {value.toLocaleString()}
+                                    </span>
+                                  ),
+                                  width: 130,
+                                },
+                                {
+                                  title: "Did Not Vote",
+                                  dataIndex: "didNotVote",
+                                  key: "didNotVote",
+                                  sorter: (a, b) => a.didNotVote - b.didNotVote,
+                                  render: (value) => (
+                                    <span style={{ color: "#ff4d4f" }}>
+                                      {value.toLocaleString()}
+                                    </span>
+                                  ),
+                                  width: 130,
+                                },
+                                {
+                                  title: "Turnout %",
+                                  dataIndex: "turnoutPercentage",
+                                  key: "turnoutPercentage",
+                                  sorter: (a, b) =>
+                                    parseFloat(a.turnoutPercentage) -
+                                    parseFloat(b.turnoutPercentage),
+                                  render: (value) => (
+                                    <span
+                                      style={{
+                                        color: "#722ed1",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      {value}%
+                                    </span>
+                                  ),
+                                  width: 120,
+                                },
+                              ]}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500">
+                          {chart.selectedParts.length > 0
+                            ? "No data for selected parts"
+                            : "No polling data available"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            </Col>
+          );
+        })}
+      </Row>
+    </div>
+  );
+}

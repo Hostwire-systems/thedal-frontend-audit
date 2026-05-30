@@ -1,0 +1,11 @@
+.ql-editor {
+  white-space: pre-line !important;
+  /* line-height: 1.6; */
+}
+
+
+.ql-editor br::after,
+.preview-content br::after {
+  content: "\A";
+  white-space: pre;
+}

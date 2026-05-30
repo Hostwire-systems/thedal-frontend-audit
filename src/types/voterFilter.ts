@@ -1,0 +1,32 @@
+export interface VoterFilters {
+  boothNumber?: Array<string | number>;
+  gender?: string[];
+  minAge?: number;
+  maxAge?: number;
+  includeUnknownAge?: boolean;
+  religion?: string[];
+  casteName?: string[];
+  subcaste?: string[];
+  casteCategoryName?: string[];
+  party?: string[];
+  voterHistoryName?: string[];
+  categoryDescription?: string[];
+  search?: string;
+  voterId?: string;
+  epic_number?: string;
+  serial_number?: string;
+  voterFnameEn?: string;
+  voterLnameEn?: string;
+  relationFirstNameEn?: string;
+  relationLastNameEn?: string;
+  sortBy?: string | null;
+  order?: "asc" | "desc" | null;
+  addressed?: boolean | null;
+  hasPhoto?: boolean | null;
+  photoUploadedFrom?: string | null;
+  photoUploadedTo?: string | null;
+  schemeId?: number | null;
+  pollStatus?: string[];
+  hasMobileNo?: boolean;
+  hasWhatsappNo?: boolean;
+}

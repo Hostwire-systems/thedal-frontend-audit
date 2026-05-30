@@ -1,0 +1,64 @@
+sub_caste_name,caste_name,religion_name
+Iyer,Brahmin,Hindu
+Iyengar,Brahmin,Hindu
+Smartha,Brahmin,Hindu
+Vaidiki,Brahmin,Hindu
+Niyogi,Brahmin,Hindu
+Rajput,Kshatriya,Hindu
+Thakur,Kshatriya,Hindu
+Chauhan,Kshatriya,Hindu
+Rathore,Kshatriya,Hindu
+Sisodiya,Kshatriya,Hindu
+Agarwal,Vaishya,Hindu
+Baniya,Vaishya,Hindu
+Gupta,Vaishya,Hindu
+Jain,Vaishya,Hindu
+Marwari,Vaishya,Hindu
+Scheduled Caste,Shudra,Hindu
+Dalit,Shudra,Hindu
+Harijan,Shudra,Hindu
+Mahar,Shudra,Hindu
+Chamar,Shudra,Hindu
+Reddy Balija,Reddy,Hindu
+Reddy Kapu,Reddy,Hindu
+Reddy Velama,Reddy,Hindu
+Kamma Naidu,Kamma,Hindu
+Kamma Chowdary,Kamma,Hindu
+Kapu Balija,Kapu,Hindu
+Kapu Telaga,Kapu,Hindu
+Velama Dora,Velama,Hindu
+Velama Naicker,Velama,Hindu
+Raju Kshatriya,Raju,Hindu
+Raju Dora,Raju,Hindu
+Naidu Balija,Naidu,Hindu
+Naidu Kamma,Naidu,Hindu
+Hanafi,Sheikh,Islam
+Shafi,Sheikh,Islam
+Maliki,Sheikh,Islam
+Hanbali,Sheikh,Islam
+Deobandi Sunni,Sheikh,Islam
+Twelver,Syed,Islam
+Ismaili,Syed,Islam
+Alawite,Syed,Islam
+Zaidi,Syed,Islam
+Jafari,Syed,Islam
+Deobandi,Pathan,Islam
+Tablighi,Pathan,Islam
+Barelvi Sunni,Malik,Islam
+Ahle Sunnat,Malik,Islam
+Qadri,Khan,Islam
+Chishti,Khan,Islam
+Roman Catholic,Catholic,Christianity
+Latin Catholic,Catholic,Christianity
+Eastern Catholic,Catholic,Christianity
+Methodist,Protestant,Christianity
+Lutheran,Protestant,Christianity
+Presbyterian,Protestant,Christianity
+Pentecostal,Protestant,Christianity
+Baptist Protestant,Baptist,Christianity
+Greek Orthodox,Orthodox,Christianity
+Russian Orthodox,Orthodox,Christianity
+Serbian Orthodox,Orthodox,Christianity
+Romanian Orthodox,Orthodox,Christianity
+Church of England,Anglican,Christianity
+Episcopal,Anglican,Christianity

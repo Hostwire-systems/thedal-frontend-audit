@@ -1,0 +1,50 @@
+[data-scope="auth"] {
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--auth-font-family);
+  background: rgb(var(--auth-surface-page) / 1);
+  color: rgb(var(--auth-text-primary) / 1);
+}
+
+[data-scope="auth"] * {
+  box-sizing: border-box;
+}
+
+[data-scope="auth"] input:-webkit-autofill,
+[data-scope="auth"] input:-webkit-autofill:hover,
+[data-scope="auth"] input:-webkit-autofill:focus,
+[data-scope="auth"] textarea:-webkit-autofill,
+[data-scope="auth"] textarea:-webkit-autofill:hover,
+[data-scope="auth"] textarea:-webkit-autofill:focus,
+[data-scope="auth"] select:-webkit-autofill,
+[data-scope="auth"] select:-webkit-autofill:hover,
+[data-scope="auth"] select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px rgb(var(--auth-surface-elevated) / 1) inset !important;
+  -webkit-text-fill-color: rgb(var(--auth-text-primary) / 1) !important;
+  caret-color: rgb(var(--auth-text-primary) / 1);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+@keyframes authFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-authFadeInUp {
+  animation: authFadeInUp 0.35s ease-out both;
+}
+
+@media (max-width: 768px) {
+  [data-scope="auth"] {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+}

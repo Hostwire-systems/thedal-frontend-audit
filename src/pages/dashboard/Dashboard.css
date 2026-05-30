@@ -1,0 +1,34 @@
+.custom-tabs .ant-tabs-ink-bar {
+  background-color: #1d4ed8 !important; /* Set underline color */
+}
+.custom-tabs-orange .ant-tabs-ink-bar {
+  background-color: #f9980e !important; /* Set underline color */
+}
+.custom-tabs-green .ant-tabs-ink-bar {
+  background-color: #4FCE5D !important; /* Set underline color */
+}
+
+.custom-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #1d4ed8 !important; /* Set active tab text color */
+}
+.custom-tabs-orange .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #f9980e !important; /* Set active tab text color */
+}
+.custom-tabs-green .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #4FCE5D !important; /* Set active tab text color */
+}
+
+.custom-tabs,.custon-tabs-orange .ant-tabs-tab {
+  transition: color 0.3s ease; /* Smooth transition for hover and active states */
+}
+
+
+.custom-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: #2563eb; /* Slightly lighter blue for hover */
+}
+.custom-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: #2563eb; /* Slightly lighter blue for hover */
+}
+.custom-tabs-green .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: #4FCE5D; /* Slightly lighter blue for hover */
+}

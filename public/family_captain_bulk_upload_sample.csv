@@ -1,0 +1,6 @@
+first_name,last_name,email,mobile_number,password,gender,whats_app_number,status,remarks,assigned_families,street,city,state,postal_code,country
+John,Doe,john.doe@example.com,9876543210,SecurePass123,male,9876543210,active,Experienced leader,123e4567-e89b-12d3-a456-426614174000;223e4567-e89b-12d3-a456-426614174001,123 Main St,Springfield,Illinois,62701,USA
+Jane,Smith,jane.smith@example.com,9876543211,MyPassword456,female,9876543211,active,Community organizer,,456 Oak Ave,Springfield,Illinois,62702,USA
+Robert,Johnson,robert.j@example.com,9876543212,StrongPass789,male,9876543212,inactive,New recruit,323e4567-e89b-12d3-a456-426614174002,789 Pine St,Springfield,Illinois,62703,USA
+Maria,Garcia,maria.garcia@example.com,9876543213,Password123!,female,9876543213,active,Bilingual speaker,,321 Cedar Rd,Springfield,Illinois,62704,USA
+David,Wilson,david.wilson@example.com,9876543214,MySecure2024,male,9876543214,active,Tech-savvy volunteer,423e4567-e89b-12d3-a456-426614174003;523e4567-e89b-12d3-a456-426614174004,654 Elm St,Springfield,Illinois,62705,USA

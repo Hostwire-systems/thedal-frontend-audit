@@ -1,0 +1,30 @@
+name: Deploy Vite App to AWS Lightsail
+
+on:
+  push:
+    branches:
+      - main  # Trigger deployment on push to the dev branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH agent
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+
+    - name: Deploy and build on Lightsail
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.LIGHTSAIL_IP_ADDRESS }} << 'EOF'
+        sudo su
+        cd /var/www/thedal-ui
+        git pull origin development          # Pull the latest code
+        npm install                  # Install dependencies
+        npm run build                # Build the Vite app (outputs to dist/)
+        sudo systemctl restart nginx # Restart Nginx to serve the new build
+        EOF

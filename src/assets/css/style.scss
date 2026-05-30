@@ -1,0 +1,376 @@
+html {
+  overflow-x: hidden;
+}
+
+.main {
+  // width: 1320px;
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.input-element {
+  height: 46.81px;
+  border-radius: 4px;
+  background: #f5f5f5;
+}
+
+.ql-editor p:empty,
+.ql-editor p>br:only-child {
+  min-height: 1em;
+  margin-bottom: 1em;
+}
+
+.my-white-tick .ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: white !important;
+}
+
+.custom-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.custom-checkbox .ant-checkbox-checked::after {
+  border-color: #2563eb;
+}
+
+.custom-steps .ant-steps-item-finish .ant-steps-item-icon {
+  background-color: #14b8a6 !important;
+  border-color: #14b8a6 !important;
+}
+
+.custom-steps .ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon {
+  color: white !important;
+}
+
+.custom-steps
+  .ant-steps-item-finish
+  .ant-steps-item-container
+  .ant-steps-item-tail::after {
+  background-color: #14b8a6 !important;
+}
+
+.custom-steps
+  .ant-steps-item-finish
+  .ant-steps-item-content
+  .ant-steps-item-title {
+  color: #000 !important;
+  font-size: 16px !important;
+  line-height: 24px !important;
+  font-weight: 600 !important;
+}
+
+.election-card {
+  .ant-card-body {
+    padding: 1rem !important;
+  }
+}
+
+.election-steps .ant-steps-item-finish .ant-steps-item-icon {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+.election-steps .ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon {
+  color: white !important;
+  font-size: 12px !important;
+}
+
+.election-steps
+  .ant-steps-item-finish
+  .ant-steps-item-container
+  .ant-steps-item-tail::after {
+  background-color: #2563eb !important;
+}
+
+.election-steps
+  .ant-steps-item-finish
+  .ant-steps-item-content
+  .ant-steps-item-title {
+  color: #000 !important;
+  font-size: 12px !important;
+  line-height: 24px !important;
+  font-weight: 600 !important;
+}
+
+.election-steps {
+  .ant-steps-item-title {
+    font-size: 12px !important;
+  }
+}
+
+form {
+  label {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+  }
+}
+
+.voters-list-table {
+  .ant-table-thead {
+    th {
+      background: #1d4ed85c !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+    }
+  }
+}
+
+.cadre-list-table {
+  .ant-table-thead {
+    th {
+      background: #1d4ed85c !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+    }
+  }
+}
+
+.ant-menu-item-selected,
+.ant-menu-submenu-title.ant-menu-item-selected {
+  background-color: #1c1c1c0d !important;
+  color: black !important;
+}
+
+.ant-menu-item,
+.ant-menu-submenu-title {
+  color: black;
+}
+
+:where(.css-dev-only-do-not-override-zxpxyp).ant-layout
+  .ant-layout-sider-trigger {
+  background: rgb(29, 78, 216) !important;
+}
+
+.volunteer-tabs .ant-tabs-nav-list {
+  width: 100%;
+}
+
+.volunteer-tabs .ant-tabs-tab {
+  flex: 1;
+  justify-content: center;
+}
+
+.volunteer-tabs .ant-tabs-ink-bar {
+  background-color: #1d4ed8;
+}
+
+.volunteer-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #1d4ed8 !important;
+}
+
+.volunteer-tabs .ant-tabs-tab:hover {
+  color: #1d4ed8;
+}
+
+.custom-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.marker-pin {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Add this to your global CSS file */
+.ant-menu-item-selected {
+  background-color: rgb(29, 78, 216) !important;
+}
+
+.ant-menu-item-selected span,
+.ant-menu-item-selected .anticon {
+  color: white !important;
+}
+
+.ant-menu-item:hover {
+  background-color: rgb(29, 78, 216) !important;
+  color: white !important;
+}
+
+.ant-menu-item:hover span,
+.ant-menu-item:hover .anticon {
+  color: white !important;
+}
+
+/* For submenu items */
+.ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: rgb(29, 78, 216) !important;
+}
+
+.title-section {
+  border-bottom: 1px solid #E8E6E6;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+}
+
+.timeline-dot {
+  background-color: #1890ff;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.profile-card {
+  // border-radius: 9999px;
+  padding: 16px;
+  // background: #f5f5f5;
+  border-top: 1px solid #E8E6E6;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+
+.profile-info {
+  flex: 1;
+}
+
+
+.volunteer-label {
+  display: block;
+}
+
+.volunteer-name {
+  font-size: 16px;
+  display: block;
+}
+
+.booth-number {
+  display: block;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button {
+  border: none;
+  border-radius: 12px;
+  padding: 8px;
+  height: auto;
+  background-color: #F7F5FF;
+}
+
+.icon-button:hover {
+  background: #e6e6e6;
+}
+.ant-table-column-sort {
+  background-color: transparent !important;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.ant-select{
+  cursor:pointer;
+}
+
+.ant-select .ant-select-selector {
+  cursor: pointer;
+}
+
+// For dropdown menu items
+.ant-select-dropdown {
+  cursor: pointer;
+}
+
+.ant-select-selection-placeholder {
+  z-index: 1 !important;
+}
+
+.ant-select-selection-search-input {
+  z-index: 2 !important; 
+}
+
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+.ant-checkbox-checked::after {
+  background-color: #3b82f6 !important;
+}
+
+// table
+.default-list-table {
+  .ant-table-thead {
+    th {
+      background: #1d4ed85c !important;
+    }
+  }
+}
+
+.default-list-table {
+  table-layout: fixed !important;
+  /* Prevents column resizing */
+  width: 100% !important;
+}
+
+.default-list-table th,
+.default-list-table td {
+  white-space: nowrap;
+  /* Prevents text wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Keeps text from overflowing */
+}
+
+.dragging-row {
+  display: table !important;
+  width: 100%;
+  position: absolute !important;
+  z-index: 999 !important;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+.ant-table-wrapper .ant-table-column-sorters::after {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  content: "";
+  background-color: rgba(250, 250, 250, 0.7);
+}
+
+.custom-radio-group .ant-radio-wrapper .ant-radio-checked .ant-radio-inner {
+  border-color: #1890ff !important;
+  background-color: #1890ff !important;
+}
+
+.custom-spin-dark .ant-spin-dot-item {
+  background-color: #1f2937 !important;
+}
+
+// Slider css
+.custom-slider .ant-slider-track {
+  background-color: #1D4ED8 !important;
+}
+
+.custom-slider .ant-slider-handle {
+  border-color: #1E40AF !important;
+  background-color: #3B82F6 !important;
+}
+
+.ant-slider .ant-slider-handle::after {
+  background-color: white !important;
+  box-shadow: 0 0 0 2px #1D4ED8 !important;
+}
+
+.leaflet-container:-webkit-full-screen {
+  overflow: visible !important;
+  position: relative !important;
+}

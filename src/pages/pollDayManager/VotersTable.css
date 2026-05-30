@@ -1,0 +1,149 @@
+/* src/pages/pollDayManager/VotersTable.css */
+.table-container {
+  width: 100%;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Row colors */
+.row-voted {
+  background-color: #e6ffed !important; /* Light green for voters who have voted */
+}
+
+.row-not-voted {
+  background-color: #ffe6e6 !important; /* Light red for voters who haven't voted */
+}
+
+/* Header styles with matching color */
+.voters-list-table .ant-table-thead > tr > th {
+  background-color: #B8B8FF !important; /* Lavender color for headers */
+  font-weight: 600;
+  padding: 12px 16px !important;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Fix header background for fixed columns */
+.voters-list-table .ant-table-thead > tr > th.ant-table-cell-fix-left,
+.voters-list-table .ant-table-thead > tr > th.ant-table-cell-fix-right {
+  background-color: #B8B8FF !important;
+}
+
+
+/* Button styles */
+.vote-button {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+  border-radius: 8px;
+  height: 38px;
+  font-weight: 600;
+  box-shadow: 0px 8px 16px rgba(29, 78, 216, 0.2);
+}
+
+.view-button {
+  background-color: #fff;
+  border: 1px solid #1d4ed8;
+  color: #1d4ed8;
+  border-radius: 8px;
+  height: 38px;
+  font-weight: 600;
+}
+
+.vote-button:disabled {
+  background-color: hsl(100, 77%, 44%);
+  border-color: #52c41a;
+  color: #fff;
+}
+
+.unvote-button {
+  background-color: hsl(100, 77%, 44%);
+  border-color: #52c41a;
+  color: #fff;
+  border-radius: 8px;
+  height: 38px;
+  font-weight: 600;
+}
+
+.vote-button:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.view-button:hover {
+  background-color: #1d4ed8;
+  color: #fff;
+  border-color: #1d4ed8;
+}
+
+/* Fixed columns styling */
+.voters-list-table .ant-table-cell-fix-left,
+.voters-list-table .ant-table-cell-fix-right {
+  background: inherit !important;
+}
+
+/* Table scroll fixes */
+.voters-list-table .ant-table-header {
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+.voters-list-table .ant-table-body {
+  overflow-y: auto !important;
+}
+
+/* Pagination styles with matching color */
+.voters-list-table .ant-pagination {
+  position: static !important;
+  margin: 16px 0 !important;
+  padding: 16px !important;
+  background-color: #B8B8FF !important;
+  border-radius: 0 0 8px 8px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Switch styles */
+.voters-list-table .ant-switch-checked {
+  background-color: green !important;
+}
+
+/* Fix for sticky columns in voted/non-voted rows */
+.row-voted td.ant-table-cell-fix-left,
+.row-voted td.ant-table-cell-fix-right {
+  background-color: #e6ffed !important;
+}
+
+.row-not-voted td.ant-table-cell-fix-left,
+.row-not-voted td.ant-table-cell-fix-right {
+  background-color: #ffe6e6 !important;
+}
+
+/* Row hover effects */
+.row-voted:hover td {
+  background-color: #d9f7be !important;
+}
+
+.row-voted:hover td.ant-table-cell-fix-left,
+.row-voted:hover td.ant-table-cell-fix-right {
+  background-color: #d9f7be !important;
+}
+
+.row-not-voted:hover td {
+  background-color: #ffd6d6 !important;
+}
+
+.row-not-voted:hover td.ant-table-cell-fix-left,
+.row-not-voted:hover td.ant-table-cell-fix-right {
+  background-color: #ffd6d6 !important;
+}
+
+/* Ensure footer is not sticky */
+.ant-table-wrapper .ant-pagination {
+  position: static !important;
+}

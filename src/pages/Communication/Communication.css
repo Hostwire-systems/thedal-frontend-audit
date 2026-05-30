@@ -1,0 +1,34 @@
+ .whatsapp-tabs .ant-tabs-nav::before {
+          border-bottom: none !important;
+        }
+        
+        .whatsapp-tabs .tab-label {
+          display: inline-block;
+          padding: 8px 16px;
+          margin: 0 4px;
+          border-radius: 4px;
+          background: #f3f4f6;
+          color: #4b5563;
+          font-weight: 500;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        
+        .whatsapp-tabs .tab-label.active {
+          background: #25D366; /* WhatsApp green */
+          color: white;
+        }
+        
+        .whatsapp-tabs .ant-tabs-tab {
+          padding: 0 !important;
+          margin: 0 4px !important;
+          border: none !important;
+        }
+        
+        .whatsapp-tabs .ant-tabs-tab + .ant-tabs-tab {
+          margin: 0 4px !important;
+        }
+        
+        .whatsapp-tabs .ant-tabs-ink-bar {
+          display: none !important;
+        }

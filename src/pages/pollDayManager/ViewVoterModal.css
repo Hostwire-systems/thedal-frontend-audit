@@ -1,0 +1,16 @@
+/* src/pages/pollDayManager/ViewVoterModal.css */
+
+.vote-button-modal {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+  border-radius: 8px;
+  height: 38px;
+  font-weight: 600;
+}
+
+.vote-button-modal:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}

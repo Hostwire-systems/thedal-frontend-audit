@@ -1,0 +1,8 @@
+.voter-list-item:hover {
+  background-color: #e6f9d1 !important; /* Light gray background on hover */
+}
+
+/* Force the spinner (loading icon) to be white */
+.ant-btn-loading-icon .anticon-loading {
+  color: #fff !important; /* Make the spinner white */
+}
