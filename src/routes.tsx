@@ -92,21 +92,18 @@ import SIR from "./pages/SIR/SIR";
 import Reports from "./pages/Reports";
 import CountDayAgent from "./pages/CountDayAgent";
 import BoothAgent from "./pages/BoothAgent";
-import AuthThemeProvider from "./components/auth/AuthThemeProvider";
 
 const { Sider, Content } = Layout;
 
 const AuthLayout: React.FC = () => {
   return (
-    <AuthThemeProvider>
-      <Routes>
-        <Route path="/" element={<PublicRoute><Register /></PublicRoute>} />
-        <Route path="/register" element={<Navigate to="/" replace />} />
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/welcome" element={<PublicRoute><Welcome /></PublicRoute>} />
-        <Route path="/google-signup" element={<PublicRoute><GoogleSignup /></PublicRoute>} />
-      </Routes>
-    </AuthThemeProvider>
+    <Routes>
+      <Route path="/" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/register" element={<Navigate to="/" replace />} />
+      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+      <Route path="/welcome" element={<PublicRoute><Welcome /></PublicRoute>} />
+      <Route path="/google-signup" element={<PublicRoute><GoogleSignup /></PublicRoute>} />
+    </Routes>
   );
 };
 

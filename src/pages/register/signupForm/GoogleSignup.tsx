@@ -12,7 +12,7 @@ import {
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import { LoadingOutlined } from "@ant-design/icons";
-import logo from "../../../assets/icons/Thedal-logo.svg";
+import logo from "../../../assets/images/Thedal Logo Dec2024-cropped.svg";
 import RightImage from "../../../assets/images/image1.svg";
 import "../Register.css";
 import {
